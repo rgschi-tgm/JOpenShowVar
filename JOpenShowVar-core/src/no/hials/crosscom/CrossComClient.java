@@ -29,7 +29,9 @@ import no.hials.crosscom.KRL.KRLVariable;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,15 +43,29 @@ import no.hials.crosscom.KRL.structs.KRLE6Axis;
  *
  * @author Lars Ivar Hatledal
  */
-public final class CrossComClient extends Socket {
+public class CrossComClient  {
 
-    BufferedInputStream bis = new BufferedInputStream(getInputStream());
-    BufferedOutputStream bos = new BufferedOutputStream(getOutputStream());
+    private final int KBOT_ROBOTCONN_TIMEOUT = 5*1000; // 5 seconds
+  
+    Socket robotConnectionSocket = null; // CREATED BY KEKSOBOT
+    
+    BufferedInputStream bis = null; // MODIFIED BY KEKSOBOT
+    BufferedOutputStream bos = null; // MODIFIED BY KEKSOBOT
 
     private final KRLE6Axis axis_act = new KRLE6Axis("$AXIS_ACT");
 
     public CrossComClient(String host, int port) throws UnknownHostException, IOException {
-        super(host, port);
+        // ATTENTION: THIS CONSTRUCTOR IS MODIFIED BY KEKSOBOT
+        // REASON: Timeout needed to be added and it was not possible in another way.
+        Socket s = new Socket();
+        this.robotConnectionSocket = s;
+        
+        SocketAddress addr = new InetSocketAddress(host, port);
+        this.robotConnectionSocket.connect(addr, KBOT_ROBOTCONN_TIMEOUT);
+        
+        this.bis = new BufferedInputStream(this.robotConnectionSocket.getInputStream());
+        this.bos = new BufferedOutputStream(this.robotConnectionSocket.getOutputStream());
+        // ATTENTION: THIS CONSTRUCTOR IS MODIFIED BY KEKSOBOT
     }
 
     /**
@@ -321,5 +337,9 @@ public final class CrossComClient extends Socket {
      */
     public static int getInt(byte[] bytes, int off) {
         return bytes[off] << 8 & 0xFF00 | bytes[off + 1] & 0xFF;
+    }
+    
+    public void closeConn() throws IOException {
+      this.robotConnectionSocket.close();
     }
 }
